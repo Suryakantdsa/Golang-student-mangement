@@ -1,6 +1,6 @@
 storage
 /config
-internal
+# internal
 *.exe
 *.exe~
 *.test

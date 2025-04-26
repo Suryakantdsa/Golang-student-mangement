@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github/suryakantdsa/student-api/internal/config"
+	"github/suryakantdsa/student-api/internal/http/handlers/student"
 	"log"
 	"log/slog"
 	"net/http"
@@ -21,9 +22,7 @@ func main() {
 	// databse setup
 	// setup rounter .
 	router := http.NewServeMux()
-	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Welcome to the student api"))
-	})
+	router.HandleFunc("POST /api/students", student.New())
 
 	// setup server /
 
