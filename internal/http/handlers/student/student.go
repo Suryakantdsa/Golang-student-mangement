@@ -70,8 +70,10 @@ func GetById(storage storage.Storage) http.HandlerFunc {
 func GetList(storage storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		limitStr := r.URL.Query().Get("$limit")
-		skipStr := r.URL.Query().Get("$limit")
-		// nameStr := r.URL.Query().Get("$limit")
+		skipStr := r.URL.Query().Get("$skip")
+		name := r.URL.Query().Get("name")
+		email := r.URL.Query().Get("email")
+		age := r.URL.Query().Get("age")
 		limit := 20
 		skip := 0
 
@@ -83,11 +85,13 @@ func GetList(storage storage.Storage) http.HandlerFunc {
 
 		if skipStr != "" {
 			if pasrsedSkip, err := strconv.Atoi(skipStr); err == nil {
-				limit = pasrsedSkip
+				skip = pasrsedSkip
 			}
 		}
 		queryParams := map[string]string{
-			// "name": nameStr,
+			"name":  name,
+			"email": email,
+			"age":   age,
 		}
 		slog.Info("getting all students")
 		students, err := storage.GetStudents(limit, skip, queryParams)

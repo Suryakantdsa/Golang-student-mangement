@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github/suryakantdsa/student-api/internal/config"
 	"github/suryakantdsa/student-api/internal/types"
+	"strconv"
+	"strings"
 
 	_ "github.com/lib/pq"
 )
@@ -75,24 +77,46 @@ func (p *Postgres) GetStudentById(id int64) (types.Student, error) {
 	return student, nil
 }
 
-func (p *Postgres) GetStudents(limit int, skip int, params interface{}) (types.StudentListResponse, error) {
-
+func (p *Postgres) GetStudents(limit int, skip int, params map[string]string) (interface{}, error) {
 	if limit == 0 {
 		limit = 20
 	}
 	if skip < 0 {
 		skip = 0
 	}
-	var query string
-	var agrs []interface{}
-	if limit == -1 {
-		query = "SELECT id,name,email,age FROM students"
 
-	} else {
-		query = "SELECT id ,name,email,age FROM students LIMIT $1 OFFSET $2"
-		agrs = append(agrs, limit, skip)
+	query := "SELECT id,name,email,age FROM students"
+	countQuery := "SELECT COUNT(*) FROM students"
+
+	var args []interface{}
+	var conditions []string
+
+	if name, ok := params["name"]; ok && name != "" {
+		conditions = append(conditions, "name ILIKE $"+strconv.Itoa(len(args)+1))
+		args = append(args, "%"+name+"%")
 	}
-	row, err := p.Db.Query(query, agrs...)
+	if email, ok := params["email"]; ok && email != "" {
+		conditions = append(conditions, "email = $"+strconv.Itoa(len(args)+1))
+		args = append(args, email)
+	}
+	if age, ok := params["age"]; ok && age != "" {
+		conditions = append(conditions, "age = $"+strconv.Itoa(len(args)+1))
+		args = append(args, age)
+	}
+
+	if len(conditions) > 0 {
+		whereClause := " WHERE " + strings.Join(conditions, " AND ")
+		query += whereClause
+		countQuery += whereClause
+	}
+
+	if limit != -1 {
+		query += " LIMIT $" + strconv.Itoa(len(args)+1)
+		query += " OFFSET $" + strconv.Itoa(len(args)+2)
+		args = append(args, limit, skip)
+	}
+
+	row, err := p.Db.Query(query, args...)
 	if err != nil {
 		return types.StudentListResponse{}, err
 	}
@@ -100,7 +124,6 @@ func (p *Postgres) GetStudents(limit int, skip int, params interface{}) (types.S
 
 	students := []types.Student{}
 	for row.Next() {
-
 		var s types.Student
 		if err := row.Scan(&s.Id, &s.Name, &s.Email, &s.Age); err != nil {
 			return types.StudentListResponse{}, err
@@ -113,15 +136,23 @@ func (p *Postgres) GetStudents(limit int, skip int, params interface{}) (types.S
 	}
 
 	var total int
-	err = p.Db.QueryRow("SELECT COUNT(*) FROM students").Scan(&total)
+	if limit != -1 {
+		err = p.Db.QueryRow(countQuery, args[:len(args)-2]...).Scan(&total)
+	} else {
+		err = p.Db.QueryRow(countQuery, args...).Scan(&total)
+	}
 	if err != nil {
 		return types.StudentListResponse{}, err
 	}
-	return types.StudentListResponse{
-		Total: total,
-		Skip:  skip,
-		Limit: limit,
-		Data:  students,
-	}, nil
 
+	if limit == -1 {
+		return students, nil
+	} else {
+		return types.StudentListResponse{
+			Total: total,
+			Skip:  skip,
+			Limit: limit,
+			Data:  students,
+		}, nil
+	}
 }

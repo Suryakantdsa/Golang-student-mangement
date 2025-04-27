@@ -8,8 +8,8 @@ type Student struct {
 }
 
 type StudentListResponse struct {
-	Total int `json:"total"`
-	Limit int `json:"limit"`
-	Skip  int `json:"skip"`
+	Total int `json:"total,omitempty"`
+	Limit int `json:"limit,omitempty"`
+	Skip  int `json:"skip,omitempty"`
 	Data  []Student
 }
