@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github/suryakantdsa/student-api/internal/config"
 	"github/suryakantdsa/student-api/internal/types"
-	"log/slog"
 
 	_ "github.com/lib/pq"
 )
@@ -56,7 +55,6 @@ func (p *Postgres) CreateStudent(name string, email string, age int) (int64, err
 
 }
 func (p *Postgres) GetStudentById(id int64) (types.Student, error) {
-	slog.Info("id", id)
 	stmt, err := p.Db.Prepare("SELECT * FROM students where id = $1;")
 	if err != nil {
 		return types.Student{}, err
@@ -75,4 +73,55 @@ func (p *Postgres) GetStudentById(id int64) (types.Student, error) {
 	}
 
 	return student, nil
+}
+
+func (p *Postgres) GetStudents(limit int, skip int, params interface{}) (types.StudentListResponse, error) {
+
+	if limit == 0 {
+		limit = 20
+	}
+	if skip < 0 {
+		skip = 0
+	}
+	var query string
+	var agrs []interface{}
+	if limit == -1 {
+		query = "SELECT id,name,email,age FROM students"
+
+	} else {
+		query = "SELECT id ,name,email,age FROM students LIMIT $1 OFFSET $2"
+		agrs = append(agrs, limit, skip)
+	}
+	row, err := p.Db.Query(query, agrs...)
+	if err != nil {
+		return types.StudentListResponse{}, err
+	}
+	defer row.Close()
+
+	students := []types.Student{}
+	for row.Next() {
+
+		var s types.Student
+		if err := row.Scan(&s.Id, &s.Name, &s.Email, &s.Age); err != nil {
+			return types.StudentListResponse{}, err
+		}
+		students = append(students, s)
+	}
+
+	if err := row.Err(); err != nil {
+		return types.StudentListResponse{}, err
+	}
+
+	var total int
+	err = p.Db.QueryRow("SELECT COUNT(*) FROM students").Scan(&total)
+	if err != nil {
+		return types.StudentListResponse{}, err
+	}
+	return types.StudentListResponse{
+		Total: total,
+		Skip:  skip,
+		Limit: limit,
+		Data:  students,
+	}, nil
+
 }

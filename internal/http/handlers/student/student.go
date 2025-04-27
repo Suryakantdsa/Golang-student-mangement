@@ -67,3 +67,36 @@ func GetById(storage storage.Storage) http.HandlerFunc {
 
 	}
 }
+func GetList(storage storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		limitStr := r.URL.Query().Get("$limit")
+		skipStr := r.URL.Query().Get("$limit")
+		// nameStr := r.URL.Query().Get("$limit")
+		limit := 20
+		skip := 0
+
+		if limitStr != "" {
+			if pasrsedLimit, err := strconv.Atoi(limitStr); err == nil {
+				limit = pasrsedLimit
+			}
+		}
+
+		if skipStr != "" {
+			if pasrsedSkip, err := strconv.Atoi(skipStr); err == nil {
+				limit = pasrsedSkip
+			}
+		}
+		queryParams := map[string]string{
+			// "name": nameStr,
+		}
+		slog.Info("getting all students")
+		students, err := storage.GetStudents(limit, skip, queryParams)
+		if err != nil {
+			response.WriteResponse(w, http.StatusInternalServerError, response.GeneralError(err))
+			return
+		}
+
+		response.WriteResponse(w, http.StatusOK, students)
+
+	}
+}
