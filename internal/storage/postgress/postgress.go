@@ -38,24 +38,15 @@ func New(cfg *config.Config) (*Postgres, error) {
 }
 
 func (p *Postgres) CreateStudent(name string, email string, age int) (int64, error) {
+	query := `INSERT INTO students (name, email, age) VALUES ($1, $2, $3) RETURNING id`
 
-	stmt, err := p.Db.Prepare(`INSERT INTO students (name,email,age) VALUES ($1,$2,$3) RETURNING id`)
+	var lastId int64
+	err := p.Db.QueryRow(query, name, email, age).Scan(&lastId)
 	if err != nil {
 		return 0, err
 	}
-	defer stmt.Close()
-
-	result, err := stmt.Exec(name, email, age)
-	if err != nil {
-		return 0, nil
-	}
-	lastId, err := result.LastInsertId()
-	if err != nil {
-		return 0, nil
-	}
 
 	return lastId, nil
-
 }
 func (p *Postgres) GetStudentById(id int64) (types.Student, error) {
 	stmt, err := p.Db.Prepare("SELECT * FROM students where id = $1;")
@@ -198,4 +189,23 @@ func (p *Postgres) UpdateStudent(id int64, body types.Student) (types.Student, e
 	}
 
 	return updatedStudent, nil
+}
+func (p *Postgres) DeleteStudent(id int64) (interface{}, error) {
+	stmt, err := p.Db.Prepare("DELETE FROM students WHERE id = $1 RETURNING id, name, email, age;")
+	if err != nil {
+		return types.Student{}, err
+	}
+	defer stmt.Close()
+	var student types.Student
+
+	err = stmt.QueryRow(id).Scan(&student.Id, &student.Name, &student.Email, &student.Age)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return types.Student{}, fmt.Errorf("no student with id %s", fmt.Sprint(id))
+		}
+
+		return types.Student{}, fmt.Errorf("query error %w", err)
+	}
+
+	return student, nil
 }

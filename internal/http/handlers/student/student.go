@@ -129,11 +129,6 @@ func UpdateStudent(storage storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		// if err := validator.New().Struct(student); err != nil {
-		// 	validErr := err.(validator.ValidationErrors)
-		// 	response.WriteResponse(w, http.StatusBadRequest, response.ValidationError(validErr))
-		// 	return
-		// }
 		updatedStudent, err := storage.UpdateStudent(intId, student)
 		if err != nil {
 			response.WriteResponse(w, http.StatusInternalServerError, err)
@@ -141,5 +136,23 @@ func UpdateStudent(storage storage.Storage) http.HandlerFunc {
 
 		response.WriteResponse(w, http.StatusOK, updatedStudent)
 
+	}
+}
+
+func DeleteStudent(storage storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		intId, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			response.WriteResponse(w, http.StatusBadRequest, response.GeneralError(err))
+			return
+		}
+		message, err := storage.DeleteStudent(intId)
+		if err != nil {
+			response.WriteResponse(w, http.StatusInternalServerError, response.GeneralError(err))
+			return
+		}
+
+		response.WriteResponse(w, http.StatusOK, message)
 	}
 }
