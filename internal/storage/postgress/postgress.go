@@ -2,6 +2,7 @@ package postgress
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github/suryakantdsa/student-api/internal/config"
 	"github/suryakantdsa/student-api/internal/types"
@@ -155,4 +156,46 @@ func (p *Postgres) GetStudents(limit int, skip int, params map[string]string) (i
 			Data:  students,
 		}, nil
 	}
+}
+func (p *Postgres) UpdateStudent(id int64, body types.Student) (types.Student, error) {
+	var setClaues []string
+	var args []interface{}
+	argsId := 1
+
+	if body.Name != "" {
+		setClaues = append(setClaues, "name= $"+strconv.Itoa(argsId))
+		args = append(args, body.Name)
+		argsId++
+	}
+	if body.Email != "" {
+		setClaues = append(setClaues, "email= $"+strconv.Itoa(argsId))
+		args = append(args, body.Email)
+		argsId++
+	}
+	if body.Age != 0 {
+		setClaues = append(setClaues, "age= $"+strconv.Itoa(argsId))
+		args = append(args, body.Age)
+		argsId++
+	}
+
+	if len(setClaues) == 0 {
+		return types.Student{}, errors.New("no field to update")
+	}
+
+	query := `
+	UPDATE students
+	SET ` + strings.Join(setClaues, ", ") + `
+	WHERE id = $` + strconv.Itoa(argsId) + `
+	RETURNING id, name, email, age
+`
+
+	var updatedStudent types.Student
+	args = append(args, id)
+	err := p.Db.QueryRow(query, args...).Scan(&updatedStudent.Id, &updatedStudent.Name, &updatedStudent.Email, &updatedStudent.Age)
+
+	if err != nil {
+		return types.Student{}, err
+	}
+
+	return updatedStudent, nil
 }
