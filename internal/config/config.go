@@ -13,10 +13,17 @@ type HTTPserver struct {
 }
 
 //  env-default:"production
+/*
 
+Host        string `yaml:"host" env-required:"true"`
+	Port        string `yaml:"port" env-required:"true"`
+	Password    string `yaml:"password" env-required:"true"`
+	Dbname      string `yaml:"dbName" env-required:"true"`
+*/
 type Config struct {
 	Env         string `yaml:"env" env:"ENV" env-required:"true"`
 	StoragePath string `yaml:"storage_path" env-required:"true"`
+	DatabaseURL string `yaml:"database_url" env-required:"true"`
 	HTTPserver  `yaml:"http_server" env-required:"true"`
 }
 

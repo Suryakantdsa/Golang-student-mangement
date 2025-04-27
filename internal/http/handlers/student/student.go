@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github/suryakantdsa/student-api/internal/storage"
 	"github/suryakantdsa/student-api/internal/types"
 	"github/suryakantdsa/student-api/internal/utils/response"
 	"io"
@@ -13,7 +14,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func New() http.HandlerFunc {
+func New(storage storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		var student types.Student
@@ -36,7 +37,11 @@ func New() http.HandlerFunc {
 			response.WriteResponse(w, http.StatusBadRequest, response.ValidationError(validErr))
 			return
 		}
+		lastId, err := storage.CreateStudent(student.Name, student.Email, student.Age)
+		if err != nil {
+			response.WriteResponse(w, http.StatusInternalServerError, err)
+		}
 
-		response.WriteResponse(w, http.StatusCreated, student)
+		response.WriteResponse(w, http.StatusCreated, map[string]int64{"id": lastId})
 	}
 }

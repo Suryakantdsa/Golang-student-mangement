@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github/suryakantdsa/student-api/internal/config"
 	"github/suryakantdsa/student-api/internal/http/handlers/student"
+	"github/suryakantdsa/student-api/internal/storage/postgress"
 	"log"
 	"log/slog"
 	"net/http"
@@ -20,9 +21,18 @@ func main() {
 	// load config
 	cfg := config.MustLoad()
 	// databse setup
+	// storage, err := sqlite.New(cfg)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	storage, err := postgress.New(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	slog.Info("storage intilized", slog.String("env", cfg.Env), slog.String("version", "1.1.1"))
 	// setup rounter .
 	router := http.NewServeMux()
-	router.HandleFunc("POST /api/students", student.New())
+	router.HandleFunc("POST /api/students", student.New(storage))
 
 	// setup server /
 
@@ -48,10 +58,13 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	err := server.Shutdown(ctx)
-	if err != nil {
+	if err := server.Shutdown(ctx); err != nil {
 		slog.Info("faild to shutdown server ", slog.String("erro", err.Error()))
 	}
+	// err := server.Shutdown(ctx)
+	// if err != nil {
+	// 	slog.Info("faild to shutdown server ", slog.String("erro", err.Error()))
+	// }
 
 	slog.Info("server shutdown sucessfully")
 

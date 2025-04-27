@@ -1,5 +1,7 @@
-storage
-/config
+/storage
+# config
+/config/
+/config/local.yaml
 # internal
 *.exe
 *.exe~
