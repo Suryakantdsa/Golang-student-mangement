@@ -23,7 +23,7 @@ A RESTful API built in Go for managing student records. Supports multiple databa
 ---
 
 ## 📁 Project Structure
-'''bash
+```bash
 student-api/
 ├── cmd/
 │   └── student-api/
@@ -42,4 +42,4 @@ student-api/
 │       └── response/        # Standardized response utilities
 ├── go.mod                   # Go module dependencies
 └── go.sum                   # Dependency checksums
-'''
+```
